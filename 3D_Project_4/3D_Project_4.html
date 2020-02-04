@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
+    <script type="text/javascript" src="https://rawcdn.githack.com/mrdoob/three.js/ce686fd491a989c00809fe84e0a60ea4d5a5d082/examples/js/controls/OrbitControls.js"></script>
+    <script type="text/javascript" src="https://chandlerprall.github.io/Physijs/physi.js"></script>
+
+
+</head>
+
+<body>
+    <div id="viewport"></div>
+
+    <script type="text/javascript">
+        'use strict';
+
+        var blob = new Blob(['importScripts("http://chandlerprall.github.io/Physijs/physijs_worker.js")'], {
+            "type": 'application/javascript'
+        });
+        var blobUrl = window.URL.createObjectURL(blob);
+
+        Physijs.scripts.worker = blobUrl;
+        Physijs.scripts.ammo = 'http://chandlerprall.github.io/Physijs/examples/js/ammo.js'; //Physijs is built on top of ammo.js 
+
+
+        var initScene, render, renderer, scene, camera, box, ball, plane, controls;
+        var bottles = [];
+        var _rotateX = 0,
+            _rotateY = 0,
+            _rotateZ = 0,
+            _gravityX = 0,
+            _gravityZ = 0,
+            _gravityY = 0,
+            gravity = -320;
+
+        initScene = function() {
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true; //Here is to tell renderer that we need shadows.
+            document.getElementById('viewport').appendChild(renderer.domElement);
+
+            scene = new Physijs.Scene;
+            scene.setGravity(new THREE.Vector3(0, -320, 0));
+
+            camera = new THREE.PerspectiveCamera(
+                35,
+                window.innerWidth / window.innerHeight,
+                1,
+                1000
+            );
+            camera.position.set(150, 180, 150);
+            camera.lookAt(scene.position);
+            scene.add(camera);
+
+            //Add a light source
+            let ambientLight = new THREE.AmbientLight(0x404040); // soft white light
+            let light = new THREE.SpotLight(0xffffff, 1);
+            light.position.set(-25, 45, -25);
+            light.castShadow = true;
+            light.shadow.mapSize.height = 4096;
+            light.shadow.mapSize.width = 4096;
+            light.castShadow = true;
+            scene.add(ambientLight);
+            scene.add(light);
+
+            // Materials
+            var ground_material = Physijs.createMaterial(
+                new THREE.MeshLambertMaterial({
+                    color: 0xffffff,
+                }),
+                .8, // high friction
+                .4 // low restitution
+            );
+
+            var box_material = Physijs.createMaterial(
+                new THREE.MeshLambertMaterial({
+                    color: 0xff0000,
+                }),
+                .4, // low friction
+                .6 // high restitution
+            );
+
+            //plane
+            plane = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(100, 4, 200),
+                ground_material,
+                0 // mass
+            );
+            plane.position.set(0, -2, 0);
+            // plane.rotation.x -= 0.3;
+            plane.receiveShadow = true;
+            scene.add(plane);
+
+            //Ball
+            ball = new Physijs.BoxMesh(
+                new THREE.SphereGeometry(3, 32, 32),
+                box_material,
+            );
+            ball.position.set(0, 50, 50);
+            ball.castShadow = true;
+            scene.add(ball);
+
+            //Bottle
+            for (var i = 0; i < 4; i++) {
+                for (var j = 0; j <= i; j++) {
+                    var bottle = new Physijs.BoxMesh(
+                        new THREE.BoxGeometry(4, 8, 4),
+                        box_material,
+                    );
+                    bottle.position.set(2 + 4 * i - 8 * j, 4, -50 - 10 * i);
+                    scene.add(bottle);
+                }
+            }
+
+
+            var axesHelper = new THREE.AxesHelper(70);
+            scene.add(axesHelper);
+
+            //controller
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.update();
+
+            //EventListener
+            function handleClick(e) {
+                // console.log("Clicked!");
+                var _vector = new THREE.Vector3(0, 0, -50000);
+                ball.applyCentralImpulse(_vector);
+            }
+
+            function handleOrientation(e) {
+                _rotateX = e.beta;
+                _rotateY = e.gamma;
+                _rotateZ = 0;
+                _gravityX = gravity * Math.sin(e.gamma);
+                _gravityZ = gravity * Math.cos(e.gamma);
+                _gravityY = gravity * Math.sin(e.gamma) * Math.cos(e.beta);
+            }
+            document.addEventListener('click', handleClick);
+            // window.addEventListener('deviceorientation', handleOrientation);
+
+            requestAnimationFrame(render);
+        };
+
+        render = function() {
+            // scene.setGravity(new THREE.Vector3(_gravityX, _gravityY, 0));
+            controls.update();
+            scene.simulate(); // run physics
+            renderer.render(scene, camera); // render the scene
+            requestAnimationFrame(render);
+        };
+
+        window.onload = initScene();
+    </script>
+</body>
+
+</html>

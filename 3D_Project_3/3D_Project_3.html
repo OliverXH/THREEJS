@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
+    <script type="text/javascript" src="https://rawcdn.githack.com/mrdoob/three.js/ce686fd491a989c00809fe84e0a60ea4d5a5d082/examples/js/controls/OrbitControls.js"></script>
+    <script type="text/javascript" src="https://chandlerprall.github.io/Physijs/physi.js"></script>
+
+
+</head>
+
+<body>
+    <div id="viewport"></div>
+
+    <script type="text/javascript">
+        'use strict';
+
+        var blob = new Blob(['importScripts("http://chandlerprall.github.io/Physijs/physijs_worker.js")'], {
+            "type": 'application/javascript'
+        });
+        var blobUrl = window.URL.createObjectURL(blob);
+
+        Physijs.scripts.worker = blobUrl;
+        Physijs.scripts.ammo = 'http://chandlerprall.github.io/Physijs/examples/js/ammo.js'; //Physijs is built on top of ammo.js 
+
+
+        var initScene, render, renderer, scene, camera, box, ball, plane, controls;
+        var walls = [];
+
+        initScene = function() {
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true; //Here is to tell renderer that we need shadows.
+            document.getElementById('viewport').appendChild(renderer.domElement);
+
+            scene = new Physijs.Scene;
+            scene.setGravity(new THREE.Vector3(0, -320, 0));
+
+            camera = new THREE.PerspectiveCamera(
+                35,
+                window.innerWidth / window.innerHeight,
+                1,
+                1000
+            );
+            camera.position.set(150, 180, 150);
+            camera.lookAt(scene.position);
+            scene.add(camera);
+
+            //Add a light source
+            let ambientLight = new THREE.AmbientLight(0x404040); // soft white light
+            let light = new THREE.SpotLight(0xffffff, 1);
+            light.position.set(-25, 45, -25);
+            light.castShadow = true;
+            light.shadow.mapSize.height = 4096;
+            light.shadow.mapSize.width = 4096;
+            light.castShadow = true;
+            scene.add(ambientLight);
+            scene.add(light);
+
+            // Materials
+            var ground_material = Physijs.createMaterial(
+                new THREE.MeshLambertMaterial({
+                    color: 0xffffff,
+                }),
+                .8, // high friction
+                .4 // low restitution
+            );
+
+            var box_material = Physijs.createMaterial(
+                new THREE.MeshLambertMaterial({
+                    color: 0xff0000,
+                }),
+                .4, // low friction
+                .6 // high restitution
+            );
+
+            //plane
+            plane = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(100, 4, 200),
+                ground_material,
+                0 // mass
+            );
+            plane.position.set(0, -2, 0);
+            // plane.rotation.x -= 0.3;
+            plane.receiveShadow = true;
+            scene.add(plane);
+            /*
+            // Box
+            box = new Physijs.BoxMesh(
+                new THREE.CubeGeometry(5, 5, 5),
+                box_material,
+            );
+            box.position.set(0, 30, 40);
+            box.castShadow = true;
+            scene.add(box);
+
+            //Ball
+            ball = new Physijs.BoxMesh(
+                new THREE.SphereGeometry(2.5, 32, 32),
+                box_material,
+            );
+            ball.position.set(0, 40, 80);
+            ball.castShadow = true;
+            scene.add(ball);
+            */
+
+            //add wall
+            // var radius = 16;
+            // var angle = 0;
+            // for (var i = 0; i < 12; i++) {
+            //     var wall = new Physijs.BoxMesh(
+            //         new THREE.BoxGeometry(6, 12, 2),
+            //         box_material
+            //     );
+            //     wall.position.x = radius * Math.cos(angle);
+            //     wall.position.z = radius * Math.sin(angle);
+            //     wall.position.y = 6;
+            //     wall.rotation.y -= angle;
+            //     wall.castShadow = true;
+            //     wall.receiveShadow = true;
+            //     angle += Math.PI / 6;
+            //     scene.add(wall);
+            //     walls.push(wall);
+            // }
+
+            for (var i = 0; i < 25; i++) {
+                var wall = new Physijs.BoxMesh(
+                    new THREE.BoxGeometry(6, 12, 2),
+                    box_material
+                );
+                wall.position.x = 0;
+                wall.position.z = 95 - i * 7;
+                wall.position.y = 6;
+                wall.castShadow = true;
+                wall.receiveShadow = true;
+                scene.add(wall);
+                walls.push(wall);
+            }
+
+
+            var axesHelper = new THREE.AxesHelper(70);
+            scene.add(axesHelper);
+
+            //controller
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.update();
+
+            //EventListener
+            function handleClick(e) {
+                // console.log("Clicked!");
+                var _vector = new THREE.Vector3(0, 0, -1500);
+                walls[0].applyImpulse(_vector, new THREE.Vector3(0, 0, 6));
+            }
+            document.addEventListener('click', handleClick);
+
+            requestAnimationFrame(render);
+        };
+
+        render = function() {
+            controls.update();
+            scene.simulate(); // run physics
+            renderer.render(scene, camera); // render the scene
+            requestAnimationFrame(render);
+        };
+
+        window.onload = initScene();
+    </script>
+</body>
+
+</html>
