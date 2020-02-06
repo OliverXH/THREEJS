@@ -24,6 +24,9 @@
         Physijs.scripts.ammo = 'http://chandlerprall.github.io/Physijs/examples/js/ammo.js'; //Physijs is built on top of ammo.js 
 
 
+        // Physijs.scripts.worker = "physijs_worker.js";
+        // Physijs.scripts.ammo = "ammo.js";
+
         var initScene, render, renderer, scene, camera, box, ball, controls;
         var planes = [],
             bottles = [];
@@ -38,6 +41,47 @@
             speedD = false,
             speedS = false,
             speedW = false;
+
+        // Materials
+        var ground_material = Physijs.createMaterial(
+            new THREE.MeshLambertMaterial({
+                color: 0xa64942,
+            }),
+            0.1, // high friction
+            .4 // low restitution
+        );
+
+        var wall_material = Physijs.createMaterial(
+            new THREE.MeshLambertMaterial({
+                color: 0xfff1c1,
+            }),
+            0, // high friction
+            .4 // low restitution
+        );
+
+        var box_material = Physijs.createMaterial(
+            new THREE.MeshLambertMaterial({
+                color: 0xff0000,
+            }),
+            0.1, // low friction
+            .6 // high restitution
+        );
+
+        var ball_material = Physijs.createMaterial(
+            new THREE.MeshLambertMaterial({
+                color: 0x2E94B9,
+            }),
+            0.1, // low friction
+            0.6 // high restitution
+        );
+
+        var bottle_material = Physijs.createMaterial(
+            new THREE.MeshLambertMaterial({
+                color: 0xa696c8
+            }),
+            .2,
+            .4
+        );
 
         initScene = function() {
             renderer = new THREE.WebGLRenderer();
@@ -69,94 +113,14 @@
             scene.add(ambientLight);
             scene.add(light);
 
-            // Materials
-            var ground_material = Physijs.createMaterial(
-                new THREE.MeshLambertMaterial({
-                    color: 0xa64942,
-                }),
-                .8, // high friction
-                .4 // low restitution
-            );
 
-            var wall_material = Physijs.createMaterial(
-                new THREE.MeshLambertMaterial({
-                    color: 0xfff1c1,
-                }),
-                .3, // high friction
-                .4 // low restitution
-            );
 
-            var box_material = Physijs.createMaterial(
-                new THREE.MeshLambertMaterial({
-                    color: 0xff0000,
-                }),
-                .4, // low friction
-                .6 // high restitution
-            );
-
-            var ball_material = Physijs.createMaterial(
-                new THREE.MeshLambertMaterial({
-                    color: 0x2E94B9,
-                }),
-                .8, // low friction
-                .6 // high restitution
-            );
-
-            var bottle_material = Physijs.createMaterial(
-                new THREE.MeshLambertMaterial({
-                    color: 0xa696c8
-                }),
-                .2,
-                .4
-            );
-
-            //==========plane==========================
-            planes[0] = new Physijs.BoxMesh(
-                new THREE.BoxGeometry(200, 4, 200),
-                ground_material,
-                0 // mass
-            );
-            planes[0].position.set(0, -2, 0);
-
-            planes[1] = new Physijs.BoxMesh(
-                new THREE.BoxGeometry(200, 8, 4),
-                wall_material,
-                0 // mass
-            );
-            planes[1].position.set(0, 4, -98);
-
-            planes[2] = new Physijs.BoxMesh(
-                new THREE.BoxGeometry(200, 8, 4),
-                wall_material,
-                0 // mass
-            );
-            planes[2].position.set(0, 4, 98);
-
-            planes[3] = new Physijs.BoxMesh(
-                new THREE.BoxGeometry(4, 8, 200),
-                wall_material,
-                0 // mass
-            );
-            planes[3].position.set(-98, 4, 0);
-
-            planes[4] = new Physijs.BoxMesh(
-                new THREE.BoxGeometry(4, 8, 200),
-                wall_material,
-                0 // mass
-            );
-            planes[4].position.set(98, 4, 0);
-
-            for (var i = 0; i <= 4; i++) {
-                planes[i].receiveShadow = true;
-                planes[i].castShadow = true;
-                scene.add(planes[i]);
-            }
+            createGround();
 
             //===========Ball==========================
-            ball = new Physijs.SphereMesh(
+            ball = new Physijs.BoxMesh(
                 new THREE.SphereGeometry(3, 32, 32),
                 box_material,
-                400
             );
             ball.position.set(0, 50, 50);
             ball.castShadow = true;
@@ -182,9 +146,8 @@
                     var bottle = new Physijs.SphereMesh(
                         new THREE.SphereGeometry(3, 32, 32),
                         ball_material,
-                        400
                     );
-                    bottle.position.set(2 + 4 * i - 8 * j, 3, -50 - 8 * i);
+                    bottle.position.set(3 * i - 6 * j, 3, -50 - 3 * 1.733 * i);
                     bottle.castShadow = true;
                     bottle.receiveShadow = true;
                     scene.add(bottle);
@@ -201,7 +164,7 @@
             //EventListener
             function handleClick(e) {
                 // console.log("Clicked!");
-                var _vector = new THREE.Vector3(0, 0, -100000);
+                var _vector = new THREE.Vector3(0, 0, -70000);
                 ball.applyCentralImpulse(_vector);
             }
 
@@ -264,6 +227,50 @@
             renderer.render(scene, camera); // render the scene
             requestAnimationFrame(render);
         };
+
+        function createGround() {
+            //==========plane==========================
+            planes[0] = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(200, 4, 200),
+                ground_material,
+                0 // mass
+            );
+            planes[0].position.set(0, -2, 0);
+
+            planes[1] = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(200, 8, 4),
+                wall_material,
+                0 // mass
+            );
+            planes[1].position.set(0, 4, -98);
+
+            planes[2] = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(200, 8, 4),
+                wall_material,
+                0 // mass
+            );
+            planes[2].position.set(0, 4, 98);
+
+            planes[3] = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(4, 8, 200),
+                wall_material,
+                0 // mass
+            );
+            planes[3].position.set(-98, 4, 0);
+
+            planes[4] = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(4, 8, 200),
+                wall_material,
+                0 // mass
+            );
+            planes[4].position.set(98, 4, 0);
+
+            for (var i = 0; i <= 4; i++) {
+                planes[i].receiveShadow = true;
+                planes[i].castShadow = true;
+                scene.add(planes[i]);
+            }
+        }
 
         window.onload = initScene();
     </script>
