@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>three.js / cannon.js example</title>
+    <meta charset="utf-8">
+    <style>
+        * {
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        button {
+            margin: 0 auto;
+            font-size: 60px;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="position: absolute; width: 100%; text-align: center;">
+        <button id="pause">Pause</button>
+        <button id="start">start</button>
+    </div>
+    <script src="https://threejsfundamentals.org/threejs/resources/threejs/r113/build/three.js"></script>
+    <script src="src/cannon.js"></script>
+    <script type="module">
+        import { GLTFLoader } from './src/GLTFLoader.js';
+        import { OrbitControls } from './src/OrbitControls.js'
+
+        var world, mass, box, shape, housePhys, planePhys, spherePhys, timeStep = 1 / 60,
+            camera, scene, renderer, loader, controls, geometry, house, sphere, outLine, material, plane, mesh;
+        var box_1;
+
+        var pause_button = document.getElementById('pause');
+        var start_button = document.getElementById('start');
+
+        var pausing = false;
+
+
+        initThree();
+        initCannon();
+        init();
+        animate();
+
+
+        function RigidBody(width, height, depth, color, mass) {
+            this.width = width;
+            this.height = height;
+            this.depth = depth;
+            this.mass = mass;
+            this.color = color;
+            this.position = new CANNON.Vec3(0, 0, 0);
+
+            this.body = new CANNON.Body({
+                mass: this.mass,
+                shape: new CANNON.Box(new CANNON.Vec3(this.width / 2, this.height / 2, this.depth / 2))
+            });
+            this.body.position = this.position;
+            world.addBody(this.body);
+
+            this.mesh = new THREE.Mesh(
+                new THREE.BoxGeometry(this.width, this.height, this.depth),
+                new THREE.MeshLambertMaterial({
+                    color: this.color,
+                })
+            );
+            this.mesh.castShadow = true;
+            this.mesh.receiveShadow = true;
+            scene.add(this.mesh);
+
+            this.updata = function () {
+                this.mesh.position.copy(this.body.position);
+                this.mesh.quaternion.copy(this.body.quaternion);
+            }
+
+        }
+        // RigidBody.prototype.updata = function () {
+        //     this.mesh.position.copy(this.body.position);
+        //     this.mesh.quaternion.copy(this.body.quaternion);
+        // }
+
+
+        function init() {
+            box_1 = new RigidBody(2, 2, 2, 0xfe4dfa, 1);
+            box_1.position.set(8, 6, -2);
+            // console.log("init");
+
+            pause_button.addEventListener('click', pause);
+            start_button.addEventListener('click', start);
+        }
+
+        function initCannon() {
+            world = new CANNON.World();
+            world.gravity.set(0, -10, 0);
+            world.broadphase = new CANNON.NaiveBroadphase();
+            world.solver.iterations = 10;
+            box = new CANNON.Body({
+                mass: 1,
+                shape: new CANNON.Box(new CANNON.Vec3(1, 1, 1))
+            });
+            box.angularVelocity.set(0, 10, 0);
+            box.angularDamping = 0.5;
+            box.position.set(5, 12, 1);
+            world.addBody(box);
+
+            housePhys = new CANNON.Body({
+                mass: 1,
+                shape: new CANNON.Cylinder(1, 1, 1.7, 20),
+            });
+            housePhys.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+            housePhys.position.set(0, 2.5, 0);
+            world.addBody(housePhys);
+
+            spherePhys = new CANNON.Body({
+                mass: 1,
+                shape: new CANNON.Sphere(1),
+            });
+            spherePhys.position.set(-6, 5, 0);
+            world.addBody(spherePhys);
+
+            planePhys = new CANNON.Body({
+                mass: 0,
+                shape: new CANNON.Box(new CANNON.Vec3(50, 0.5, 50)),
+            });
+            planePhys.position.set(0, -0.5, 0);
+            world.addBody(planePhys);
+        }
+
+        function initThree() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
+            camera.position.set(4, 8, 10);
+            camera.lookAt(scene.position);
+            scene.add(camera);
+
+            const light = new THREE.PointLight(0xFFFFFF, 1);
+            light.castShadow = true;
+            light.shadow.mapSize.width = 1024;
+            light.shadow.mapSize.height = 1024;
+            light.position.set(0, 40, 0);
+            scene.add(light);
+            // var helper = new THREE.SpotLightHelper(light, 5);
+            // scene.add(helper);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
+            scene.add(ambientLight);
+
+            //Plane
+            plane = new THREE.Mesh(new THREE.BoxGeometry(100, 1, 100), new THREE.MeshLambertMaterial({
+                color: 0xeeeeee
+            }));
+            plane.receiveShadow = true;
+            scene.add(plane);
+
+            geometry = new THREE.BoxGeometry(2, 2, 2);
+            material = new THREE.MeshLambertMaterial({
+                color: 0xff0000
+            });
+            mesh = new THREE.Mesh(geometry, material);
+            mesh.castShadow = true;
+            scene.add(mesh);
+
+            sphere = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 20), new THREE.MeshLambertMaterial({ color: 0x2e2e2e, wireframe: true, }));
+            sphere.castShadow = true;
+            sphere.receiveShadow = true;
+            scene.add(sphere);
+
+            outLine = new THREE.Mesh(
+                new THREE.CylinderGeometry(1, 1, 1.7, 20),
+                new THREE.MeshLambertMaterial({
+                    color: 0xff0000,
+                    wireframe: true,
+                })
+            );
+            outLine.rotateOnAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2);
+            // scene.add(outLine);
+
+            //gLtf loader 
+            loader = new GLTFLoader();
+            loader.load('sources/tong.glb', (gltf) => {
+                console.log(gltf);
+                house = gltf.scene;
+                house.children[2].rotateX(Math.PI / 2);
+                house.children[2].castShadow = true;
+                house.children[2].receiveShadow = true;
+                house.position.set(0, 2, 0);
+                scene.add(house);
+            });
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.shadowMap.enabled = true;
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            // controls.target.set(0, 5, 0);
+            // controls.update();
+
+            //event listener 
+            document.addEventListener('keydown', function (event) {
+                console.log(event.keyCode);
+                switch (event.keyCode) {
+                    case 87:
+                        spherePhys.applyForce(new CANNON.Vec3(0, 0, -60), spherePhys.position);
+                        break;
+                    case 83:
+                        spherePhys.applyForce(new CANNON.Vec3(0, 0, 60), spherePhys.position);
+                        break;
+                }
+                switch (event.keyCode) {
+                    case 65:
+                        spherePhys.applyForce(new CANNON.Vec3(-60, 0, 0), spherePhys.position);
+                        break;
+                    case 68:
+                        spherePhys.applyForce(new CANNON.Vec3(60, 0, 0), spherePhys.position);
+                        break;
+                }
+
+
+            });
+            // document.addEventListener('keydown', function (event){
+            //     box.applyImpulse(new CANNON.Vec3(0, 0, 10), box.position);
+            // });
+        }
+
+        var num;
+        function animate() {
+            num = null;
+            num = requestAnimationFrame(animate);
+            updatePhysics();
+            render();
+            if (pausing)
+                cancelAnimationFrame(num);
+        }
+
+        function updatePhysics() { // Step the physics
+            world.step(timeStep); // Copy coordinates from Cannon.js to Three.js 
+
+            if (spherePhys.position.y <= -10)
+                spherePhys.position.set(-5, 8, -10);
+            mesh.position.copy(box.position);
+            mesh.quaternion.copy(box.quaternion);
+
+            sphere.position.copy(spherePhys.position);
+            sphere.quaternion.copy(spherePhys.quaternion);
+
+            if (house != undefined) {
+                house.position.x = housePhys.position.x;
+                house.position.y = housePhys.position.y;
+                house.position.z = housePhys.position.z;
+                house.quaternion.copy(housePhys.quaternion);
+            }
+
+            outLine.position.copy(housePhys.position);
+            outLine.quaternion.copy(housePhys.quaternion);
+
+            plane.position.copy(planePhys.position);
+        }
+
+        function render() {
+            renderer.render(scene, camera);
+            // controls.update();
+            box_1.updata();
+        }
+
+        function pause() {
+            pausing = true;
+        }
+        function start() {
+            console.log("start");
+            pausing = false;
+            animate();
+        };
+
+    </script>
+</body>
+
+</html>

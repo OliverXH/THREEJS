@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skybox Background</title>
+</head>
+
+<body>
+    <script src="src/three.js"></script>
+    <script src="src/OrbitControls.js"></script>
+    <script src="https://schteppe.github.io/cannon.js/build/cannon.js"></script>
+    <script>
+        let world;
+        let scene, camera, renderer, controls;
+        let loader, texture;
+
+        init();
+        render();
+
+        function RigidBody(width, height, depth, color, mass) {
+            this.width = width;
+            this.height = height;
+            this.depth = depth;
+            this.mass = mass;
+            this.color = color;
+            this.position = new CANNON.Vec3(0, 0, 0);
+
+            this.body = new CANNON.Body({
+                mass: this.mass,
+                shape: new CANNON.Box(new CANNON.Vec3(this.width / 2, this.height / 2, this.depth / 2))
+            });
+            this.body.position = this.position;
+            world.addBody(this.body);
+
+            this.mesh = new THREE.Mesh(
+                new THREE.BoxGeometry(this.width, this.height, this.depth),
+                new THREE.MeshLambertMaterial({
+                    color: this.color,
+                })
+            );
+            this.mesh.castShadow = true;
+            this.mesh.receiveShadow = true;
+            scene.add(this.mesh);
+
+            // this.updata = function () {
+            //     this.mesh.position.copy(this.body.position);
+            //     this.mesh.quaternion.copy(this.body.quaternion);
+            // }
+
+        }
+        RigidBody.prototype.updata = function () {
+            this.mesh.position.copy(this.body.position);
+            this.mesh.quaternion.copy(this.body.quaternion);
+        }
+
+        function init() {
+            world = new CANNON.World();
+            world.gravity.set(0, -10, 0);
+            world.broadphase = new CANNON.NaiveBroadphase();
+            world.solver.iterations = 10;
+
+            scene = new THREE.Scene;
+
+            camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(-18, 30, 30);
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            document.body.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.update();
+
+            //background images
+            loader = new THREE.CubeTextureLoader();
+            texture = loader.load([
+                "sources/images/kenon_star/kenon_star_ft.jpg",
+                "sources/images/kenon_star/kenon_star_bk.jpg",
+                "sources/images/kenon_star/kenon_star_up.jpg",
+                "sources/images/kenon_star/kenon_star_dn.jpg",
+                "sources/images/kenon_star/kenon_star_rt.jpg",
+                "sources/images/kenon_star/kenon_star_lf.jpg"
+            ]);
+            scene.background = texture;
+
+            {
+                const color = 0xFFFFFF;
+                const intensity = 1;
+                const light = new THREE.DirectionalLight(color, intensity);
+                light.position.set(-80, 200, 400);
+                scene.add(light);
+            }
+
+            {
+                const geometry = new THREE.BoxGeometry(4, 4, 4);
+                const material = new THREE.MeshLambertMaterial({
+                    color: 0xff0000
+                });
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.castShadow = true;
+                scene.add(mesh);
+            }
+
+
+
+        }
+
+        function render() {
+            requestAnimationFrame(render);
+            renderer.render(scene, camera);
+        }
+
+    </script>
+
+</body>
+
+</html>
