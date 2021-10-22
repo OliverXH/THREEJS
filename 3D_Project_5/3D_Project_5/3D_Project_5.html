@@ -1,9 +1,21 @@
+<!DOCTYPE html>
 <html>
-
 <head>
-    <script type="text/javascript" src="https://threejs.org/build/three.min.js"></script>
-    <script type="text/javascript" src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
-    <script type="text/javascript" src="https://chandlerprall.github.io/Physijs/physi.js"></script>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="" content="">
+    <title>3D Project 5</title>
+
+    <style type="text/css">
+        html,body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+
+    <script src="https://threejs.org/build/three.min.js"></script>
+    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://chandlerprall.github.io/Physijs/physi.js"></script>
 </head>
 
 <body>
@@ -22,22 +34,22 @@
 
         var initScene, render, renderer, scene, camera, box, ball, plane, controls;
         var walls = [],
-            planes = [];
+        planes = [];
 
         var alpha,
-            beta,
-            gamma;
+        beta,
+        gamma;
 
         var forceX,
-            forceZ,
-            speedX,
-            speedY,
-            maxSpeed = 50;
+        forceZ,
+        speedX,
+        speedY,
+        maxSpeed = 50;
 
         var speedA = false,
-            speedD = false,
-            speedS = false,
-            speedW = false;
+        speedD = false,
+        speedS = false,
+        speedW = false;
 
         initScene = function() {
             renderer = new THREE.WebGLRenderer();
@@ -46,7 +58,7 @@
             document.getElementById('viewport').appendChild(renderer.domElement);
 
             scene = new Physijs.Scene;
-            scene.setGravity(new THREE.Vector3(0, -160, 0)); // 320px/s =>10m/s 
+            scene.setGravity(new THREE.Vector3(0, -160, 0)); // 320px/s =>10m/s
 
             camera = new THREE.PerspectiveCamera(
                 35,
@@ -173,32 +185,40 @@
 
             function handleKeyDown(e) {
                 var keyCode = e.keycode || e.which;
-                if (keyCode == 87) { //W
+                if (keyCode == 87) {
+                    //W
                     speedW = true;
                 }
-                if (keyCode == 83) { //S
+                if (keyCode == 83) {
+                    //S
                     speedS = true;
                 }
-                if (keyCode == 65) { //A
+                if (keyCode == 65) {
+                    //A
                     speedA = true;
                 }
-                if (keyCode == 68) { //D
+                if (keyCode == 68) {
+                    //D
                     speedD = true;
                 }
             }
 
             function handleKeyUp(e) {
                 var keyCode = e.keycode || e.which;
-                if (keyCode == 87) { //W
+                if (keyCode == 87) {
+                    //W
                     speedW = false;
                 }
-                if (keyCode == 83) { //S
+                if (keyCode == 83) {
+                    //S
                     speedS = false;
                 }
-                if (keyCode == 65) { //A
+                if (keyCode == 65) {
+                    //A
                     speedA = false;
                 }
-                if (keyCode == 68) { //D
+                if (keyCode == 68) {
+                    //D
                     speedD = false;
                 }
             }
@@ -233,7 +253,7 @@
             }
 
             var device = navigator.platform;
-            device.indexOf("Linux") == 0 ? ball.applyCentralForce(new THREE.Vector3(forceX, 0, forceZ)) : ball.setLinearVelocity(new THREE.Vector3(speedX, 0, speedY));
+            device.indexOf("Linux") == 0 ? ball.applyCentralForce(new THREE.Vector3(forceX, 0, forceZ)): ball.setLinearVelocity(new THREE.Vector3(speedX, 0, speedY));
 
             // ball.applyCentralForce(new THREE.Vector3(forceX, 0, forceZ));
             //controls.update();
